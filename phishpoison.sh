@@ -161,7 +161,7 @@ do
   echo $postdata
   echo
 
-  curl -d "$postdata" -A "$user_agent" -e "$referer" $phish_script	# send http post data to phish script.
+  curl -d "$postdata" -A "$user_agent" -e "$referer" $phish_script > /dev/null	# send http post data to phish script.
 									# this is where the poisoning happens!
 
   randsleep=$RANDOM							# wait a random amount of time between 0 and
@@ -170,3 +170,4 @@ do
   sleep $randsleep
 
 done < 6f3fb207.csv
+
