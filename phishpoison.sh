@@ -30,7 +30,7 @@
 
 phish_script="http://localhost/"					# URL of the form processor
 referer="http://localhost/"						# URL of the referring page
-postdata='1=$email&4=$password&5=$password&submit=submit' 		# create form post data string for cURL
+postprompt='1=$email&4=$password&5=$password&submit=submit' 		# create form post data string for cURL
 
 function prompt {
   echo
@@ -40,11 +40,34 @@ function prompt {
   echo "Please enter the url of the processing form"
   read phish_script
   echo
-  echo "Please enter the post data string"
+  echo "Please enter the post data string.  ? for all available fields"
   echo "The format should look like this:"
   echo "(if the inputs are named email and password)"
   echo "email=\$email&password=\$password"
   read postprompt
+
+  while [[ $postprompt == "?" ]]
+  do
+    echo '$fname		- First name'
+    echo '$lname		- Last name'
+    echo '$email		- email address'
+    echo '$password	- randomly generated password'
+    echo '$add		- street address'
+    echo '$city		- city'
+    echo '$state		- state'
+    echo '$zip		- zip code'
+    echo '$a		- birth month'
+    echo '$b		- birth day'
+    echo '$c		- birth year'
+    echo '$ssn		- Social Security Number'
+    echo '$cc		- Credit Card Number'
+    echo '$expm		- Credit Card Expiration month'
+    echo '$expy		- Credit Card Expiration year'
+    echo '$cvv		- Credit Card CVV Code'
+    echo '$bank		- Credit Card Issuing Bank'
+    read postprompt
+  done
+
   echo
   echo
   echo "Post data string is:"
@@ -78,12 +101,12 @@ do
   ssn=`echo $ssn | sed 's/-//g'`					# strip "-" from SSN
 
   mmn=`echo $line | cut -d "," -f11`
-  bday=`echo $line | cut -d "," -f12` # not fed to phish script
+  bday=`echo $line | cut -d "," -f12`					# birthday in mm/dd/yy format
   a=`echo $bday | cut -d "/" -f1`					# a=month b=day c=year
   b=`echo $bday | cut -d "/" -f2`
   c=`echo $bday | cut -d "/" -f3`
   cc=`echo $line | cut -d "," -f14`
-  exp=`echo $line | cut -d "," -f16` # not fed to phish script
+  exp=`echo $line | cut -d "," -f16`					# expiration in mm/yyyy format
   expm=`echo $exp | cut -d "/" -f1`
   expy=`echo $exp | sed 's/^.*\(..\)$/\1/'`				# use last two digits for the year
   cvv=`echo $line | cut -d "," -f15`
@@ -122,13 +145,11 @@ do
   postdata=`echo $postdata | sed "s/"'$city'"/$city/g"`
   postdata=`echo $postdata | sed "s/"'$state'"/$state/g"`
   postdata=`echo $postdata | sed "s/"'$zip'"/$zip/g"`
-  postdata=`echo $postdata | sed "s/"'$bday'"/$bday/g"`
   postdata=`echo $postdata | sed "s/"'$a'"/$a/g"`
   postdata=`echo $postdata | sed "s/"'$b'"/$b/g"`
   postdata=`echo $postdata | sed "s/"'$c'"/$c/g"`
   postdata=`echo $postdata | sed "s/"'$ssn'"/$ssn/g"`
   postdata=`echo $postdata | sed "s/"'$cc'"/$cc/g"`
-  postdata=`echo $postdata | sed "s/"'$exp'"/$exp/g"`
   postdata=`echo $postdata | sed "s/"'$expm'"/$expm/g"`
   postdata=`echo $postdata | sed "s/"'$expy'"/$expy/g"`
   postdata=`echo $postdata | sed "s/"'$cvv'"/$cvv/g"`
