@@ -28,11 +28,39 @@
 #
 ##########################################################
 
+phish_script="http://localhost/"					# URL of the form processor
+referer="http://localhost/"						# URL of the referring page
+postdata='1=$email&4=$password&5=$password&submit=submit' 		# create form post data string for cURL
+
+function prompt {
+  echo
+  echo "Please enter the url of the form"
+  read referer
+  echo
+  echo "Please enter the url of the processing form"
+  read phish_script
+  echo
+  echo "Please enter the post data string"
+  echo "The format should look like this:"
+  echo "(if the inputs are named email and password)"
+  echo "email=\$email&password=\$password"
+  read postprompt
+  echo
+  echo
+  echo "Post data string is:"
+  echo $postprompt
+  echo "Press enter to begin poisoning..."
+  read
+}
+
+if [[ $1 == "-i" ]]
+  then
+    prompt
+fi
+
 bank_lines=`cat ccissuer.txt | wc -l`
 user_agent_lines=`cat useragents.txt | wc -l`
-phish_script="http://webemail.phpforms.net/view_forms/sub_view/firstform"
 
-echo $bank_lines
 while read line
 do
   line=`echo $line | sed 's///g'` 					# strip windows newlines "^M"
@@ -70,9 +98,9 @@ do
   bank=`sed -n "${bank_rdm_line},${bank_rdm_line} p" ccissuer.txt`
   bank=`echo $bank | sed 's/ /+/g'`
 
-  user_agent_line=$RANDOM
+  user_agent_line=$RANDOM						# pick a random user-agent string
   let "user_agent_line %= $user_agent_lines"
-  user_agent=`sed -n "${user_agent_line},${user_agent_line} p" useragents.txt` # pick a random user-agent string
+  user_agent=`sed -n "${user_agent_line},${user_agent_line} p" useragents.txt`
 
   MOD=9999								# pick a random 4 digit PIN
   FLOOR=1000
@@ -87,17 +115,37 @@ do
     continue
   fi
 
-									# create form post data string for cURL
-  postdata="1=$email&4=$password&5=$password"
+  postdata=$postprompt							# clear data from previous post
+  postdata=`echo $postdata | sed "s/"'$fname'"/$fname/g"`		# prepare the next post
+  postdata=`echo $postdata | sed "s/"'$lname'"/$lname/g"`
+  postdata=`echo $postdata | sed "s/"'$add'"/$add/g"`
+  postdata=`echo $postdata | sed "s/"'$city'"/$city/g"`
+  postdata=`echo $postdata | sed "s/"'$state'"/$state/g"`
+  postdata=`echo $postdata | sed "s/"'$zip'"/$zip/g"`
+  postdata=`echo $postdata | sed "s/"'$bday'"/$bday/g"`
+  postdata=`echo $postdata | sed "s/"'$a'"/$a/g"`
+  postdata=`echo $postdata | sed "s/"'$b'"/$b/g"`
+  postdata=`echo $postdata | sed "s/"'$c'"/$c/g"`
+  postdata=`echo $postdata | sed "s/"'$ssn'"/$ssn/g"`
+  postdata=`echo $postdata | sed "s/"'$cc'"/$cc/g"`
+  postdata=`echo $postdata | sed "s/"'$exp'"/$exp/g"`
+  postdata=`echo $postdata | sed "s/"'$expm'"/$expm/g"`
+  postdata=`echo $postdata | sed "s/"'$expy'"/$expy/g"`
+  postdata=`echo $postdata | sed "s/"'$cvv'"/$cvv/g"`
+  postdata=`echo $postdata | sed "s/"'$email'"/$email/g"`
+  postdata=`echo $postdata | sed "s/"'$password'"/$password/g"`
+  postdata=`echo $postdata | sed "s/"'$bank'"/$bank/g"`
 
-  echo curl -d "$postdata" -A "$user_agent" $phish_script			# send http post data to phish script.
-									# this is where the evil happens!
+  echo "Sending..."
+  echo $postdata
+  echo
 
-  echo "\n $postdata"
+  curl -d "$postdata" -A "$user_agent" -e "$referer" $phish_script	# send http post data to phish script.
+									# this is where the poisoning happens!
 
   randsleep=$RANDOM							# wait a random amount of time between 0 and
   sleepmod=120								# sleepmod seconds for next iteration
   let "randsleep %= $sleepmod"
-  #sleep $randsleep
+  sleep $randsleep
 
 done < 6f3fb207.csv
