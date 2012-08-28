@@ -31,7 +31,7 @@
 custom_domain="domain.com"
 phish_script="http://localhost/"					# URL of the form processor
 referer="http://localhost/"						# URL of the referring page
-postprompt='1=$custom_email&4=$password&5=$password&username=$username&submit=submit' 		# create form post data string for cURL
+postprompt='1=$custom_email&4=$password&5=$password&6=$username&submit=submit' 		# create form post data string for cURL
 
 function prompt {
   echo
@@ -94,9 +94,14 @@ while read line
 do
   line=`echo $line | sed 's///g'` 					# strip windows newlines "^M"
   fname=`echo $line | cut -d "," -f1`					# load data from .csv
-  lname=`echo $line | cut -d "," -f3`
-  add=`echo $line | cut -d "," -f5`
 
+  if [[ $fname == "GivenName" ]] ; then					# skip the first line
+    continue
+  fi
+
+  lname=`echo $line | cut -d "," -f3`
+
+  add=`echo $line | cut -d "," -f5`
   add=`echo $add | sed 's/ /+/g'`					# make URL compliant.  Sub "+" for " "
 
   city=`echo $line | cut -d "," -f6`
@@ -142,10 +147,6 @@ do
     let "pin %= $MOD"
   done
 
-  if [[ $fname == "GivenName" ]] ; then					# skip the first line
-    continue
-  fi
-
   postdata=$postprompt							# clear data from previous post
   postdata=`echo $postdata | sed "s/"'$fname'"/$fname/g"`		# prepare the next post
   postdata=`echo $postdata | sed "s/"'$lname'"/$lname/g"`
@@ -173,11 +174,12 @@ do
 
   curl -d "$postdata" -A "$user_agent" -e "$referer" $phish_script > /dev/null	# send http post data to phish script.
 									# this is where the poisoning happens!
+  echo									
 
   randsleep=$RANDOM							# wait a random amount of time between 0 and
   sleepmod=120								# sleepmod seconds for next iteration
   let "randsleep %= $sleepmod"
-  sleep $randsleep
+  #sleep $randsleep
 
 done < 6f3fb207.csv
 
