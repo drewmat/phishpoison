@@ -28,9 +28,10 @@
 #
 ##########################################################
 
+custom_domain="domain.com"
 phish_script="http://localhost/"					# URL of the form processor
 referer="http://localhost/"						# URL of the referring page
-postprompt='1=$email&4=$password&5=$password&submit=submit' 		# create form post data string for cURL
+postprompt='1=$custom_email&4=$password&5=$password&username=$username&submit=submit' 		# create form post data string for cURL
 
 function prompt {
   echo
@@ -39,6 +40,9 @@ function prompt {
   echo
   echo "Please enter the url of the processing form"
   read phish_script
+  echo 
+  echo "Please enter your custom mail domain (optional)"
+  read custom_domain
   echo
   echo "Please enter the post data string.  ? for all available fields"
   echo "The format should look like this:"
@@ -51,14 +55,16 @@ function prompt {
     echo '$fname		- First name'
     echo '$lname		- Last name'
     echo '$email		- email address'
+    echo '$username	- fake username (firstname.lastname)'
+    echo '$custom_email	- custom email address (firstname.lastname@customdomain)'
     echo '$password	- randomly generated password'
     echo '$add		- street address'
     echo '$city		- city'
     echo '$state		- state'
     echo '$zip		- zip code'
-    echo '$a		- birth month'
-    echo '$b		- birth day'
-    echo '$c		- birth year'
+    echo '$month		- birth month'
+    echo '$day		- birth day'
+    echo '$year		- birth year'
     echo '$ssn		- Social Security Number'
     echo '$cc		- Credit Card Number'
     echo '$expm		- Credit Card Expiration month'
@@ -102,9 +108,9 @@ do
 
   mmn=`echo $line | cut -d "," -f11`
   bday=`echo $line | cut -d "," -f12`					# birthday in mm/dd/yy format
-  a=`echo $bday | cut -d "/" -f1`					# a=month b=day c=year
-  b=`echo $bday | cut -d "/" -f2`
-  c=`echo $bday | cut -d "/" -f3`
+  month=`echo $bday | cut -d "/" -f1`					# a=month b=day c=year
+  day=`echo $bday | cut -d "/" -f2`
+  year=`echo $bday | cut -d "/" -f3`
   cc=`echo $line | cut -d "," -f14`
   exp=`echo $line | cut -d "," -f16`					# expiration in mm/yyyy format
   expm=`echo $exp | cut -d "/" -f1`
@@ -112,6 +118,8 @@ do
   cvv=`echo $line | cut -d "," -f15`
 
   email=`echo $line | cut -d "," -f9`					# email
+  username=`echo ${fname,,}.${lname,,}`
+  custom_email=`echo $username@$custom_domain`
 
   length=$[ ( $RANDOM % 10 ) + 5 ]
   password=`cat /dev/urandom|tr -dc "a-zA-Z0-9-_\$\?"|fold -w $length|head -1` # generate a random password between 5 and 10 chars
@@ -145,15 +153,17 @@ do
   postdata=`echo $postdata | sed "s/"'$city'"/$city/g"`
   postdata=`echo $postdata | sed "s/"'$state'"/$state/g"`
   postdata=`echo $postdata | sed "s/"'$zip'"/$zip/g"`
-  postdata=`echo $postdata | sed "s/"'$a'"/$a/g"`
-  postdata=`echo $postdata | sed "s/"'$b'"/$b/g"`
-  postdata=`echo $postdata | sed "s/"'$c'"/$c/g"`
+  postdata=`echo $postdata | sed "s/"'$month'"/$month/g"`
+  postdata=`echo $postdata | sed "s/"'$day'"/$day/g"`
+  postdata=`echo $postdata | sed "s/"'$year'"/$year/g"`
   postdata=`echo $postdata | sed "s/"'$ssn'"/$ssn/g"`
   postdata=`echo $postdata | sed "s/"'$cc'"/$cc/g"`
   postdata=`echo $postdata | sed "s/"'$expm'"/$expm/g"`
   postdata=`echo $postdata | sed "s/"'$expy'"/$expy/g"`
   postdata=`echo $postdata | sed "s/"'$cvv'"/$cvv/g"`
   postdata=`echo $postdata | sed "s/"'$email'"/$email/g"`
+  postdata=`echo $postdata | sed "s/"'$custom_email'"/$custom_email/g"`
+  postdata=`echo $postdata | sed "s/"'$username'"/$username/g"`
   postdata=`echo $postdata | sed "s/"'$password'"/$password/g"`
   postdata=`echo $postdata | sed "s/"'$bank'"/$bank/g"`
 
@@ -161,7 +171,7 @@ do
   echo $postdata
   echo
 
-  curl -d "$postdata" -A "$user_agent" -e "$referer" $phish_script > /dev/null	# send http post data to phish script.
+  #curl -d "$postdata" -A "$user_agent" -e "$referer" $phish_script > /dev/null	# send http post data to phish script.
 									# this is where the poisoning happens!
 
   randsleep=$RANDOM							# wait a random amount of time between 0 and
