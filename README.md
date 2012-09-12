@@ -10,6 +10,12 @@ http://fakenamegenerator.com and feeds the fake data
 into the phishers database to poison the data hopefully
 ruining the entire database
 
+I encourage you to get your own data from fakenamegenerator.com.
+The field order for the CSV is as follows:
+GivenName,MiddleInitial,Surname,Gender,StreetAddress,City,State,ZipCode,
+EmailAddress,TelephoneNumber,MothersMaiden,Birthday,CCType,CCNumber,CVV2,
+CCExpires,NationalID,Username,Password
+
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

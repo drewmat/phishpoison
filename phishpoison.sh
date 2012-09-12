@@ -29,9 +29,9 @@
 ##########################################################
 
 custom_domain="domain.com"
-phish_script="http://localhost/"					# URL of the form processor
-referer="http://localhost/"						# URL of the referring page
-postprompt='1=$custom_email&4=$password&5=$password&6=$username&submit=submit' 		# create form post data string for cURL
+phish_script="localhost"					# URL of the form processor
+referer="localhost"						# URL of the referring page
+postprompt='name=$fname+$lname&username=$username&c_email=$custom_email&password=$password' 		# create form post data string for cURL
 
 function prompt {
   echo
@@ -83,23 +83,24 @@ function prompt {
 }
 
 if [[ $1 == "-i" ]]
-  then
-    prompt
+then
+  prompt
 fi
 
 bank_lines=`cat ccissuer.txt | wc -l`
 user_agent_lines=`cat useragents.txt | wc -l`
 
+first=1
+
 while read line
 do
-  line=`echo $line | sed 's///g'` 					# strip windows newlines "^M"
   fname=`echo $line | cut -d "," -f1`					# load data from .csv
+  lname=`echo $line | cut -d "," -f3`
 
-  if [[ $fname == "GivenName" ]] ; then					# skip the first line
+  if [ $first -eq 1 ] ; then					# skip the first line
+    first=0
     continue
   fi
-
-  lname=`echo $line | cut -d "," -f3`
 
   add=`echo $line | cut -d "," -f5`
   add=`echo $add | sed 's/ /+/g'`					# make URL compliant.  Sub "+" for " "
@@ -123,11 +124,14 @@ do
   cvv=`echo $line | cut -d "," -f15`
 
   email=`echo $line | cut -d "," -f9`					# email
-  username=`echo ${fname,,}.${lname,,}`
+  username=`echo $line | cut -d "," -f18`
+  username=${username,,}
   custom_email=`echo $username@$custom_domain`
 
+  password=`echo $line | cut -d "," -f19`
+
   length=$[ ( $RANDOM % 10 ) + 5 ]
-  password=`cat /dev/urandom|tr -dc "a-zA-Z0-9-_\$\?"|fold -w $length|head -1` # generate a random password between 5 and 10 chars
+  dif_password=`cat /dev/urandom|tr -dc "a-zA-Z0-9-_\$\?"|fold -w $length|head -1` # generate a random password between 5 and 10 chars
 
   bank_rdm_line=$RANDOM							# pick a random issuing bank
   let "bank_rdm_line %= $bank_lines"
@@ -166,6 +170,7 @@ do
   postdata=`echo $postdata | sed "s/"'$custom_email'"/$custom_email/g"`
   postdata=`echo $postdata | sed "s/"'$username'"/$username/g"`
   postdata=`echo $postdata | sed "s/"'$password'"/$password/g"`
+  postdata=`echo $postdata | sed "s/"'$dif_password'"/$dif_password/g"`
   postdata=`echo $postdata | sed "s/"'$bank'"/$bank/g"`
 
   echo "Sending..."
@@ -174,12 +179,11 @@ do
 
   curl -d "$postdata" -A "$user_agent" -e "$referer" $phish_script > /dev/null	# send http post data to phish script.
 									# this is where the poisoning happens!
-  echo									
+  echo
 
   randsleep=$RANDOM							# wait a random amount of time between 0 and
   sleepmod=120								# sleepmod seconds for next iteration
   let "randsleep %= $sleepmod"
-  #sleep $randsleep
+  sleep $randsleep
 
-done < 6f3fb207.csv
-
+done < FakeNameGenerator.com_699eb4ed.csv
